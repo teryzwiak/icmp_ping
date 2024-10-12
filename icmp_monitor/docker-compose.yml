@@ -3,8 +3,8 @@ version: '3.8'
 services:
   main_app:
     build:
-      context: .
-      dockerfile: main_app/Dockerfile.main_app
+      context: ./main_app
+      dockerfile: Dockerfile.main_app
     ports:
       - "5000:5000"
     networks:
@@ -12,8 +12,8 @@ services:
 
   ping_app:
     build:
-      context: .
-      dockerfile: ping_app/Dockerfile.ping_app
+      context: ./ping_app
+      dockerfile: Dockerfile.ping_app
     depends_on:
       - main_app
     networks:

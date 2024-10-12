@@ -3,11 +3,21 @@ import subprocess
 import threading
 import time
 import requests
+import os
+from dotenv import load_dotenv, dotenv_values
+
+load_dotenv()
+
+APP_NAME = os.getenv("APP_NAME")
+MAIN_APP_HOST_NAME = os.getenv("MAIN_APP_HOST_NAME")
+MAIN_APP_URL = os.getenv("MAIN_APP_URL")
+MAIN_APP_URL_PING_RESULTS = os.getenv("MAIN_APP_URL_PING_RESULTS")
+MAIN_APP_URL_PING_HOSTS = os.getenv("MAIN_APP_URL_PING_HOSTS")
+PING_HOST_NAME = os.getenv("PING_HOST_NAME")
 
 app = Flask(__name__)
 
-main_app_url = "http://public_ip_or_domain:5000/ping_results"
-API_KEY = "your_secure_api_key"
+API_KEY = "be6bb4c9eff7f4c46a1a2b6feefde331"
 
 def ping_host(host):
     try:
@@ -23,9 +33,8 @@ def ping_host(host):
 
 def monitor_hosts():
     while True:
-        response = requests.get(f"http://public_ip_or_domain:5000/hosts")
+        response = requests.get(MAIN_APP_URL_PING_HOSTS)
         hosts = response.json().get('hosts', [])
-
         failed_pings = []
         high_latency = []
 
@@ -33,14 +42,14 @@ def monitor_hosts():
             success, latency = ping_host(host)
             if not success:
                 failed_pings.append(host)
-            elif latency and latency > 1000:
+            elif latency and latency > 700:
                 high_latency.append({'host': host, 'latency': latency})
 
         payload = {'failed_pings': failed_pings, 'high_latency': high_latency}
         headers = {'API-KEY': API_KEY}
-        requests.post(main_app_url, json=payload, headers=headers)
+        requests.post(MAIN_APP_URL_PING_RESULTS, json=payload)
 
-        time.sleep(60)  # Czas oczekiwania między kolejnymi pingami
+        time.sleep(5)  # Czas oczekiwania między kolejnymi pingami
 
 @app.route('/')
 def home():

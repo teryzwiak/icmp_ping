@@ -2,12 +2,16 @@ from flask import Flask, request, jsonify, abort
 import requests
 import logging
 from datetime import datetime
+import os
+#from config import API_KEY
 
 app = Flask(__name__)
 
 # Domyślne serwery do pingowania
-hosts = ["8.8.8.8", "8.8.4.4"]
-API_KEY = "your_secure_api_key"
+hosts = ["8.8.8.8", "8.8.4.4", "tests.test"]
+API_KEY = "be6bb4c9eff7f4c46a1a2b6feefde331"
+ZABBIX_SERVER = "10.0.0.4"
+HOST_NAME = "PingApp"
 
 # Konfiguracja logowania
 logging.basicConfig(filename='log.txt', level=logging.INFO, format='%(asctime)s %(message)s')
@@ -35,10 +39,14 @@ def remove_hosts():
             hosts.remove(host)
     return jsonify({'hosts': hosts})
 
+def send_to_zabbix(key, value):
+    command = f'zabbix_sender -z {ZABBIX_SERVER} -s "{HOST_NAME}" -k "{key}" -o {value}'
+    os.system(command)
+
 @app.route('/ping_results', methods=['POST'])
 def receive_ping_results():
-    if request.headers.get('API-KEY') != API_KEY:
-        abort(403)
+    #if request.headers.get('API-KEY') != API_KEY:
+    #    abort(403)
 
     data = request.get_json()
     failed_pings = data.get('failed_pings', [])
@@ -47,6 +55,7 @@ def receive_ping_results():
     timestamp = datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')
     for host in failed_pings:
         ping_results.append({'host': host, 'status': 'failed', 'latency': None, 'timestamp': timestamp})
+        send_to_zabbix("ping.host", host)
     for entry in high_latency:
         ping_results.append({'host': entry['host'], 'status': 'high_latency', 'latency': entry['latency'], 'timestamp': timestamp})
 
@@ -55,12 +64,16 @@ def receive_ping_results():
         # Zapis do log.txt
         logging.info(f"Failed pings: {failed_pings}")
         logging.info(f"High latency: {high_latency}")
+        #for host in failed_pings:
+        #    send_to_zabbix("ping.host", host)
+        #send_to_zabbix("ping.status", 1)
+        #payload = {'failed_pings': failed_pings, 'high_latency': high_latency}
+        #requests.post(zabbix_url, json=payload)
+        
 
-        # Wysyłanie do Zabbix (załóżmy, że mamy endpoint do tego)
-        zabbix_url = "http://zabbix_server/api"
-        payload = {'failed_pings': failed_pings, 'high_latency': high_latency}
-        requests.post(zabbix_url, json=payload)
 
+    else:
+        send_to_zabbix("ping.status", 0)
     return jsonify({'status': 'success'})
 
 @app.route('/ping_results', methods=['GET'])

@@ -5,7 +5,7 @@ WORKDIR /app
 
 COPY ping_app.py /app
 COPY .env /app
-RUN apt-get update && apt-get install -y iputils-ping curl && rm -rf /var/lib/apt/lists/*
+RUN apt-get update && apt-get install -y iputils-ping && rm -rf /var/lib/apt/lists/*
 RUN pip install flask requests python-dotenv 
 
 EXPOSE 5001

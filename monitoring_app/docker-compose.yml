@@ -1,0 +1,20 @@
+version: '3.8'
+
+services:
+  main_app:
+    build:
+      context: ./main_app
+      dockerfile: Dockerfile
+    volumes:
+      - ./main_app:/app
+    ports:
+      - "5000:5000"
+
+  controller:
+    build:
+      context: ./controller
+      dockerfile: Dockerfile
+    volumes:
+      - ./controller:/app
+    depends_on:
+      - main_app

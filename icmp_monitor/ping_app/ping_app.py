@@ -6,7 +6,7 @@ import requests
 
 app = Flask(__name__)
 
-main_app_url = "http://public_ip_or_domain:5000/ping_results"
+main_app_url = "http://main_app:5000/ping_results"
 API_KEY = "your_secure_api_key"
 
 def ping_host(host):
@@ -23,7 +23,7 @@ def ping_host(host):
 
 def monitor_hosts():
     while True:
-        response = requests.get(f"http://public_ip_or_domain:5000/hosts")
+        response = requests.get(f"http://main_app:5000/hosts")
         hosts = response.json().get('hosts', [])
 
         failed_pings = []

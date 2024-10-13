@@ -4,7 +4,7 @@ services:
   main_app:
     build:
       context: .
-      dockerfile: main_app/Dockerfile.main_app
+      dockerfile: /home/e24/projects/icmp_ping/icmp_monitor/main_app/Dockerfile.main_app
     ports:
       - "5000:5000"
     networks:
@@ -13,7 +13,7 @@ services:
   ping_app:
     build:
       context: .
-      dockerfile: ping_app/Dockerfile.ping_app
+      dockerfile: /home/e24/projects/icmp_ping/icmp_monitor/ping_app/Dockerfile.ping_app
     depends_on:
       - main_app
     networks:

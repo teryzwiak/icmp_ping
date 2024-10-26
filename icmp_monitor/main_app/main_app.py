@@ -6,7 +6,7 @@ from datetime import datetime
 app = Flask(__name__)
 
 # Domyślne serwery do pingowania
-hosts = ["8.8.8.8", "8.8.4.4"]
+hosts = ["8.8.8.8", "8.8.4.4", "10.12.22.3"]
 API_KEY = "your_secure_api_key"
 
 # Konfiguracja logowania
@@ -41,14 +41,15 @@ def receive_ping_results():
         abort(403)
 
     data = request.get_json()
+    app_name = data.get('app_name', [])
     failed_pings = data.get('failed_pings', [])
     high_latency = data.get('high_latency', [])
 
     timestamp = datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')
     for host in failed_pings:
-        ping_results.append({'host': host, 'status': 'failed', 'latency': None, 'timestamp': timestamp})
+        ping_results.append({'app_name': app_name, 'host': host, 'status': 'failed', 'latency': None, 'timestamp': timestamp})
     for entry in high_latency:
-        ping_results.append({'host': entry['host'], 'status': 'high_latency', 'latency': entry['latency'], 'timestamp': timestamp})
+        ping_results.append({'app_name': app_name, 'host': entry['host'], 'status': 'high_latency', 'latency': entry['latency'], 'timestamp': timestamp})
 
     # Analiza wyników
     if len(failed_pings) > 0 or len(high_latency) > 0:
@@ -57,9 +58,9 @@ def receive_ping_results():
         logging.info(f"High latency: {high_latency}")
 
         # Wysyłanie do Zabbix (załóżmy, że mamy endpoint do tego)
-        zabbix_url = "http://zabbix_server/api"
-        payload = {'failed_pings': failed_pings, 'high_latency': high_latency}
-        requests.post(zabbix_url, json=payload)
+        #zabbix_url = "http://zabbix_server/api"
+        #payload = {'failed_pings': failed_pings, 'high_latency': high_latency}
+        #requests.post(zabbix_url, json=payload)
 
     return jsonify({'status': 'success'})
 
@@ -69,13 +70,20 @@ def get_ping_results():
     per_page = int(request.args.get('per_page', 10))
     start = (page - 1) * per_page
     end = start + per_page
-    paginated_results = ping_results[start:end]
+    
+    # Sortowanie wyników według klucza 'timestamp' w odwrotnej kolejności
+    sorted_ping_results = sorted(ping_results, key=lambda x: x['timestamp'], reverse=True)
+    
+    paginated_results = sorted_ping_results[start:end]
+    
     return jsonify({
         'ping_results': paginated_results,
         'page': page,
         'per_page': per_page,
         'total': len(ping_results)
     })
+
+
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000)

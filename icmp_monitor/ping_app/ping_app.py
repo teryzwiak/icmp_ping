@@ -3,11 +3,16 @@ import subprocess
 import threading
 import time
 import requests
+import logging
+import datetime
 
 app = Flask(__name__)
 
 main_app_url = "http://main_app:5000/ping_results"
 API_KEY = "your_secure_api_key"
+app_name = "e24-dc1-ping01"
+
+logging.basicConfig(filename='log.txt', level=logging.INFO, format='%(asctime)s %(message)s')
 
 def ping_host(host):
     try:
@@ -23,24 +28,26 @@ def ping_host(host):
 
 def monitor_hosts():
     while True:
-        response = requests.get(f"http://main_app:5000/hosts")
-        hosts = response.json().get('hosts', [])
+        now = datetime.datetime.now()
+        if now.second == 0 and now.microsecond == 0:
+            response = requests.get(f"http://main_app:5000/hosts")
+            hosts = response.json().get('hosts', [])
 
-        failed_pings = []
-        high_latency = []
+            failed_pings = []
+            high_latency = []
 
-        for host in hosts:
-            success, latency = ping_host(host)
-            if not success:
-                failed_pings.append(host)
-            elif latency and latency > 1000:
-                high_latency.append({'host': host, 'latency': latency})
+            for host in hosts:
+                success, latency = ping_host(host)
+                if not success:
+                    failed_pings.append(host)
+                elif latency and latency > 5:
+                    high_latency.append({'host': host, 'latency': latency})
 
-        payload = {'failed_pings': failed_pings, 'high_latency': high_latency}
-        headers = {'API-KEY': API_KEY}
-        requests.post(main_app_url, json=payload, headers=headers)
-
-        time.sleep(60)  # Czas oczekiwania między kolejnymi pingami
+            payload = {'app_name': app_name, 'failed_pings': failed_pings, 'high_latency': high_latency}
+            headers = {'API-KEY': API_KEY}
+            requests.post(main_app_url, json=payload, headers=headers)
+            print()
+            time.sleep(60)  # Czas oczekiwania między kolejnymi pingami
 
 @app.route('/')
 def home():
